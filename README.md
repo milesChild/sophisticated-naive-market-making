@@ -174,16 +174,8 @@ First, we will compare the trading efficiency of the NMM versus the sophisticate
 
 **Experiment #1**
 
-| Variable   | Value        | Definiton   |
-| :--------: | :----------: | :---------- |
-| $M$       | 1         | The total number of market making agents        |
-| $N$       | 1000         | The total number of auctions        |
-| $T$       | 10         | The total number of traders        |
-| $\alpha$       | 0.5         | Proportion of total traders that are Gaussian-informed        |
-| $\sigma_J$       | text         | Standard deviation of the jump process        |
-| $\sigma_W$       | text         | Standard deviation of gaussian-informed noise distribution        |
-| $\eta$       | text         | Probability of a noise trader placing a trade during any auction        |
-| $p$       | text         | Probability of jump in the true value at each auction        |
+**SEE artificial/src/experiment_1.ipynb**
+
 
 # Real-World Experimental Expectations & Setup
 
