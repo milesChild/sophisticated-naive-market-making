@@ -113,7 +113,7 @@ class SophisticatedSpreadModule():
                 # Stop cycling down if the difference starts increasing
                 break
         
-        return bid_price
+        return max(bid_price, 0)
 
     def __calculate_ask(self) -> int:
         min_diff = float('inf')
@@ -139,7 +139,7 @@ class SophisticatedSpreadModule():
                 # Stop cycling up if the difference starts increasing
                 break
 
-        return ask_price
+        return min(ask_price, 100)
 
     def calculate_inventory_adjustment(self, cur_inv) -> int:
         return int(self.__i_max * (1 - np.exp(-self.__i_a * np.abs(cur_inv))) * -np.sign(cur_inv))
