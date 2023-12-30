@@ -35,7 +35,7 @@ I will briefly offer definitions to a few microstructure-related terms here to h
 
 - **Naïve Market Making:** Market making with no exogenous information about the fair price for the underlying security. For the sake of this paper, I consider a market maker to be naïve if they either don't make any assumptions about the true value of the asset they trade or if they do attempt to make a theoretical true value while being restricted to only orderbook/trading or other orderflow information.
 
-- Orderbook: The orderbook we use here is one that tracks all the price levels all market participants have posted limit orders that they are willing to buy or sell at and the subsequent quantities at those levels. Our orderbook uses price-time priority, where the first limit order at the best price wins the first order that crosses that price level.
+- **Orderbook:** The orderbook we use here is one that tracks all the price levels all market participants have posted limit orders that they are willing to buy or sell at and the subsequent quantities at those levels. Our orderbook uses price-time priority, where the first limit order at the best price wins the first order that crosses that price level.
 
 For simplicity, our trading environment is assumed to be made up of three classes of participants (aside from market makers): 
 
@@ -47,7 +47,7 @@ For simplicity, our trading environment is assumed to be made up of three classe
 
 # The Naïve Market Maker (NMM)
 
-The naïve market-making strategy we use here is an adaptation of the kalshi-adapted python NMM that can be found at the github repository ["here"]('https://github.com/milesChild/kalshi-naive-market-maker'). The NMM is a simple liquidity provider whose goal is to always post a bid and ask on a single security with a fixed spread and a fixed trading quantity that the user defines at runtime. the naïve market maker is initialized with a fixed spread ***σ*** that is symmetrical about the market's last trading price $P_{last}$, where:
+The naïve market-making strategy we use here is an adaptation of the kalshi-adapted python NMM that can be found at the github repository [here]('https://github.com/milesChild/kalshi-naive-market-maker'). The NMM is a simple liquidity provider whose goal is to always post a bid and ask on a single security with a fixed spread and a fixed trading quantity that the user defines at runtime. the naïve market maker is initialized with a fixed spread ***σ*** that is symmetrical about the market's last trading price $P_{last}$, where:
 
 $P_{bid}$ = $P_{last} - σ / 2$
 
@@ -158,17 +158,32 @@ $Pr(\text{Buy} | V = V_i) = (1 - \alpha)\eta + \alpha \cdot Pr(\tilde{\eta}(0, \
 
 Updating based on a sell order follows the exact same logic.
 
-Now, we have a more sophisticated naïve market maker that maintains a dynamic spread based on its estimation of the point-in-time true value of the underlying security given observed order flow. We also equip the aforementioned inventory control mechanism to the sophisticated NMM to incentivize inventory turnover and mitigate positional PnL.
+Now, we have a more sophisticated naïve market maker that maintains a dynamic spread based on its estimation of the point-in-time true value of the underlying security given observed order flow. We also equip the aforementioned inventory control mechanism to the sophisticated NMM to incentivize inventory turnover and mitigate positional PnL. The inventory control adjustment is applied to the bid and ask prices after the above $P_b$ and $P_a$ equations are run.
 
 We can expect this evolution of the naïve market maker to be much more effective in competitive environments, more responsive to deltas in the true value of the underlying security, and considerably better at tracking the true value of the underlying security. We will test these expectations in the proceeding sections.
 
 # Artificial Experimental Setup
 
+The artificial experimental framework is setup as follows: a single or multiple market makers are dropped at the first auction in a contrived single-security universe with $N$ total auctions and $M$ total market-making agents. The market making agents are unaware of the total number of auctions or the presence of other market makers. The single security has a true-value at all times that is governed by a jump process where at time $i + 1$, with probability $p$, a delta is applied to the true value of the security where $V^{i + 1} = V^i + \tilde{\omega}(0, \sigma_J)$, where $\tilde{\omega}(0, \sigma_J)$ is a sample from a normal distribution with mean 0 and variance $\sigma_J^2$. Each experiment will have gaussian-informed traders in proportion $\alpha$ to the total trading population (less the market-making agents) where the gaussian-informed traders recieve signals about the true value of the stock $W^i = V^i + \tilde{\eta}(0, \sigma_W)$ where $\tilde{\eta}(0, \sigma_W)$ represents a sample from a normal distribution with mean 0 and variance $\sigma_W^2$. We also introduce purely-Gaussian traders to the experiment in proportion $(1 - \alpha)$ where at any given time they have a probability $\eta$ of placing a trade. The market-making agents are provided with the true value at the first action and are not notified of changes to the true value thereafter. Market-making agents are also aware of all the other variables defined above that govern the behavior of all other market participants. The total number of trading participants is a global variable $T$ where $\alpha + (1 - \alpha) = T$.
 
+At each auction, the Gaussian traders trade randomly with probability $\eta$ and the Gaussian-informed traders trade rationally under the assumption that their noisy signal is correct. Note that adaptations to this unrealistic setup will be deliberated and made in the following sections when we deploy these market makers in real environments. Values for the above variables will be sensitized and the resulting SNMM and NMM performances will be reviewed below aross various experiments. For each experiment, the values used can be found in the appendix. The code used to run these experiments can be found in the ***articial/*** directory.
 
 # Artificial Experimental Results
 
+First, we will compare the trading efficiency of the NMM versus the sophisticated NMM in an anticompetitive, single market-maker environment with the following variables:
 
+**Experiment #1**
+
+| Variable   | Value        | Definiton   |
+| :--------: | :----------: | :---------- |
+| $M$       | 1         | The total number of market making agents        |
+| $N$       | 1000         | The total number of auctions        |
+| $T$       | 10         | The total number of traders        |
+| $\alpha$       | 0.5         | Proportion of total traders that are Gaussian-informed        |
+| $\sigma_J$       | text         | Standard deviation of the jump process        |
+| $\sigma_W$       | text         | Standard deviation of gaussian-informed noise distribution        |
+| $\eta$       | text         | Probability of a noise trader placing a trade during any auction        |
+| $p$       | text         | Probability of jump in the true value at each auction        |
 
 # Real-World Experimental Expectations & Setup
 
