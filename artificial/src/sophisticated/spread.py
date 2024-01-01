@@ -187,27 +187,6 @@ class SophisticatedSpreadModule():
             # Calculate the probability for the case where Vi < Pb
             return (1 - self.__alpha) * self.__eta + self.__alpha * normal_cdf(Pb - Vi, 0, self.__sigma_W)
         
-    # def __probability_sell_given_V(self, Vi, Pb):
-    #     """
-    #     Compute the probability of a sell order given the true value V = Vi.
-
-    #     Args:
-    #     Vi (float): The potential true value of the security.
-    #     Pb (float): The current bid price set by the market maker.
-    #     alpha (float): The proportion of informed traders in the market.
-    #     eta (float): The base probability of a trade happening.
-    #     sigma_W (float): The standard deviation of the informed traders' signal noise.
-
-    #     Returns:
-    #     float: The probability of observing a sell order given V = Vi.
-    #     """
-    #     if Vi <= Pb:
-    #         # Calculate the probability for the case where Vi <= Pb
-    #         return (1 - self.__alpha) * self.__eta + self.__alpha * (1 - normal_cdf(Pb - Vi, 0, self.__sigma_W))
-    #     else:
-    #         # Calculate the probability for the case where Vi > Pb
-    #         return (1 - self.__alpha) * self.__eta + self.__alpha * normal_cdf(Vi - Pb, 0, self.__sigma_W)
-        
     def __probability_V_given_buy(self, px, probability_vector, probability_buy, total_buy_probability):
         """
         Compute the posterior probability P(V=Vi | Buy).
