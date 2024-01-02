@@ -67,7 +67,7 @@ To address the NMM's position exposure and inefficient pricing adjustment flaws,
 
 # Inventory Control
 
-As any market-making agent provides liquidity, it will tend to accumulate a positive or negative position in the underlying asset that can interfere with its ability to remain market-neutral and generate consistent liquidity reward revenues. This accumulated position of shares, either long (positive) or short (negative), is called inventory and it is generally in our best interest to maintain zero inventory while maximizing trading volume. Thus, we need an inventory control mechanism that makes it increasingly difficult to buy shares and easy to sell shares when our inventory is long and the opposite when inventory is short.
+As any market-making agent provides liquidity, it will tend to accumulate a positive or negative position in the underlying asset that can interfere with its ability to remain market-neutral and generate consistent liquidity reward revenues. This accumulated position of shares, either long (positive) or short (negative), is called inventory and we will assume it is in our best interest to maintain zero inventory while maximizing trading volume. Thus, we need an inventory control mechanism that makes it increasingly difficult to buy shares and easy to sell shares when our inventory is long and the opposite when inventory is short.
 
 Spread placement is improved via the below inventory control mechanism, which computes an adjustment (in cents) to apply to both sides of the spread that effectively makes accumulating inventory in the direction (long/short) of current inventory increasingly difficult up to a parameterized maximum amount. 
 
@@ -88,6 +88,17 @@ Where,
 For example, when the max adjustment is set to 10 cents and $a$ is set to 0.5, the inventory control mechanism as a function of absolute inventory holdings would be as follows:
 
 ![Inventory Control Mechanism](images/inventory_control.png)
+*Figure 1: Inventory Control Mechanism*
+
+In ***artificial/inventory_control.ipynb***, we find the inventory-controlling naïve market maker to be considerably more efficient in managing portfolio exposure risk with a demonstrated ability to maintain near-zero unrealized PnL throughout the entire trading session. Unsurprisingly, the non inventory-controlling market maker becomes susceptible to significant positional PnL in times of true value volatility.
+
+The inventory-controlling market maker also appears to be more efficient at tracking the underlying's true value, likely due to the expeditious effect the exponential inventory control adjustment has on price discovery.
+
+![No Inventory Control Mechanism NMM](images/no_ic_nmm_performance.png)
+*Figure 2: Naïve Market Maker Performance, No IC*
+
+![Inventory Control Mechanism NMM](images/ic_nmm_performance.png)
+*Figure 3: Inventory-Controlling Naïve Market Maker Performance*
 
 # The Sophisticated Naïve Market Maker
 
@@ -108,8 +119,9 @@ Before detailing the approximations for $E[V|Sell]$ and $E[V|Buy]$ we will use, 
 Assume a mean value of 100 and standard deviation 10. For simplicity, assume the $P_b$ and $P_a$ have been computed summetrically about the mean at 90 and 110. The market maker's bid and ask price about its probability density estimate can then be illustrated like:
 
 ![Trivial PDF](images/trivial_pdf.png)
+*Figure 4: Trivial PDF Example*
 
-Before detailing the two mechanisms required for this $V_T$-based pricing mechanism, we need to establish a few assumptions about the trading environment:
+In reality, this distribution would accumulate higher probabilities at more concentrated price levels and display far higher kurtosis than the above normal distribution. Before detailing the two mechanisms required for this $V_T$-based pricing mechanism, we need to establish a few assumptions about the trading environment:
 
 - We need to make an assumption about the proportion of all traders that are noisy and informed, which will be denoted by $\alpha$
 - We need to make an assumption about the standard deviation of the gaussian informed traders information signal noise, denoted by $\sigma W^2$
@@ -117,6 +129,8 @@ Before detailing the two mechanisms required for this $V_T$-based pricing mechan
 - Finally, we need the initial true value of the security at the beginning of the simulation, denoted by $V_{T0}$
 
 The full derivations for the bid and ask prices will not be detailed here but those interested can read about them in Das's paper linked in references.
+
+____
 
 First, Das's equation for the optimal bid price is:
 
@@ -140,23 +154,26 @@ If a buy order is received, each of the probabilities get updated with the follo
 
 $Pr(V = V_i | \text{Buy}) = \frac{Pr(\text{Buy} | V = V_i) \cdot Pr(V = V_i)}{Pr(\text{Buy})}$
 
+(1) For the first part of the numerator, $Pr(\text{Buy} | V = V_i)$, the likelihood of observing a buy order given the true value $V_i$ can be calculated using the following equation:
+
 When $V_i \leq P_a$:
 
 $Pr(\text{Buy} | V = V_i) = (1 - \alpha)\eta + \alpha \cdot Pr(\tilde{\eta}(0, \sigma_W^2) > (P_a - V_i))$
 
-Here:
-
-- $Pr(V = V_i | \text{Buy})$ is the posterior probability, which is the updated belief about the true value being $V_i$ after observing a buy order.
-- $Pr(\text{Buy} | V = V_i)$ represents the likelihood of observing a buy order given the true value $V_i$. This likelihood is influenced by both informed and uninformed traders in the market.
-   - For informed traders (represented by $\alpha$), the likelihood considers the probability that their noise-adjusted estimate of the true value ($\tilde{\eta}(0, \sigma_W^2)$) is greater than the difference between the ask price $P_a$ and the true value $V_i$. This reflects the informed traders' propensity to buy when they believe the security is undervalued.
-   - For uninformed traders (represented by $(1 - \alpha)\eta$), the base probability $\eta$ of a trade happening is used, as these traders are assumed to trade randomly and not based on an informed estimate of the true value.
-- $Pr(\text{Buy})$ is the total probability of a buy order occurring, summed over all possible values of $V$.
+- For informed traders (represented by $\alpha$), the likelihood considers the probability that their noise-adjusted estimate of the true value ($\tilde{\eta}(0, \sigma_W^2)$) is greater than the difference between the ask price $P_a$ and the true value $V_i$. This reflects the informed traders' propensity to buy when they believe the security is undervalued.
+- For uninformed traders (represented by $(1 - \alpha)\eta$), the base probability $\eta$ of a trade happening is used, as these traders are assumed to trade randomly and not based on an informed estimate of the true value.
 
 And when $V_i > P_a$:
 
 $Pr(\text{Buy} | V = V_i) = (1 - \alpha)\eta + \alpha \cdot Pr(\tilde{\eta}(0, \sigma_W^2) < (V_i - P_a))$
 
+(2) The second part of the numerator, $Pr(V = Vi)$ is obtained as the prior probability from the density estimate, and
+
+(3) The denominator, $Pr(Buy)$ is the total probability of a buy order occurring, which is the summation of $Pr(\text{Buy} | V = V_i)$ for all price levels.
+
 Updating based on a sell order follows the exact same logic.
+
+____
 
 Now, we have a more sophisticated naïve market maker that maintains a dynamic spread based on its estimation of the point-in-time true value of the underlying security given observed order flow. We also equip the aforementioned inventory control mechanism to the sophisticated NMM to incentivize inventory turnover and mitigate positional PnL. The inventory control adjustment is applied to the bid and ask prices after the above $P_b$ and $P_a$ equations are run.
 
@@ -166,16 +183,69 @@ We can expect this evolution of the naïve market maker to be much more effectiv
 
 The artificial experimental framework is setup as follows: a single or multiple market makers are dropped at the first auction in a contrived single-security universe with $N$ total auctions and $M$ total market-making agents. The market making agents are unaware of the total number of auctions or the presence of other market makers. The single security has a true-value at all times that is governed by a jump process where at time $i + 1$, with probability $p$, a delta is applied to the true value of the security where $V^{i + 1} = V^i + \tilde{\omega}(0, \sigma_J)$, where $\tilde{\omega}(0, \sigma_J)$ is a sample from a normal distribution with mean 0 and variance $\sigma_J^2$. Each experiment will have gaussian-informed traders in proportion $\alpha$ to the total trading population (less the market-making agents) where the gaussian-informed traders recieve signals about the true value of the stock $W^i = V^i + \tilde{\eta}(0, \sigma_W)$ where $\tilde{\eta}(0, \sigma_W)$ represents a sample from a normal distribution with mean 0 and variance $\sigma_W^2$. We also introduce purely-Gaussian traders to the experiment in proportion $(1 - \alpha)$ where at any given time they have a probability $\eta$ of placing a trade. The market-making agents are provided with the true value at the first action and are not notified of changes to the true value thereafter. Market-making agents are also aware of all the other variables defined above that govern the behavior of all other market participants. The total number of trading participants is a global variable $T$ where $\alpha + (1 - \alpha) = T$.
 
-At each auction, the Gaussian traders trade randomly with probability $\eta$ and the Gaussian-informed traders trade rationally under the assumption that their noisy signal is correct. Note that adaptations to this unrealistic setup will be deliberated and made in the following sections when we deploy these market makers in real environments. Values for the above variables will be sensitized and the resulting SNMM and NMM performances will be reviewed below aross various experiments. For each experiment, the values used can be found in the appendix. The code used to run these experiments can be found in the ***articial/*** directory.
+At each auction, the Gaussian traders trade randomly with probability $\eta$ and the Gaussian-informed traders trade rationally under the assumption that their noisy signal is correct. Note that adaptations to this unrealistic setup will be deliberated and made in the following sections when we deploy these market makers in real environments. Values for the above variables will be sensitized and the resulting SNMM and NMM performances will be reviewed below aross various experiments. For each experiment, the values used can be found in the appendix. The code used to run these experiments can be found in the ***artificial/*** directory.
 
 # Artificial Experimental Results
 
-First, we will compare the trading efficiency of the NMM versus the sophisticated NMM in an anticompetitive, single market-maker environment with the following variables:
+First, we will compare the trading efficiency of the NMM versus the sophisticated NMM in an anticompetitive, frequent & low standard deviation jump, single market-maker environment with the following variables:
 
-**Experiment #1**
+| Variable   | Value        | Definiton   |
+| :--------: | :----------: | :---------- |
+| $M$       | 1         | The total number of market making agents        |
+| $N$       | 10000         | The total number of auctions        |
+| $T$       | 10         | The total number of traders        |
+| $\alpha$       | 0.4         | Proportion of total traders that are Gaussian-informed        |
+| $\sigma_W$       | 2         | Standard deviation of gaussian-informed noise distribution        |
+| $\eta$       | 0.2         | Probability of a noise trader placing a trade during any auction        |
+| $\sigma_J$       | 5         | Standard deviation of the jump process        |
+| $p_J$       | 0.05         | Probability of jump in the true value at each auction        |
 
-**SEE artificial/src/experiment_1.ipynb**
+We find that in an environment where the true value evolves frequently via a low-standard deviation jump process, both the NMM and SNMM display an ability to track the true value based only on order flow information with the SNMM tracking much more effectively than the NMM (figure 5, 7). The NMM's inventory control mechanism is considerably more effective at incentivizing inventory turnover, however the SNMM's performance premium outweighs its worse ability to maintain low inventories (figure 6, 8).
 
+![Naïve Market Maker Performance - Experiment 1](images/nmm_perf_ex1.png)
+*Figure 5: Naïve Market Maker Performance - Experiment 1*
+
+![Naïve Market Maker PnL - Experiment 1](images/nmm_pnl_ex1.png)
+*Figure 6: Naïve Market Maker Realized & Unrealized PnL - Experiment 1*
+
+![Sophisticated Naïve Market Maker Performance - Experiment 1](images/snmm_perf_ex1.png)
+*Figure 7: Sophisticated Naïve Market Maker Performance - Experiment 1*
+
+![Sophisticated Naïve Market Maker PnL - Experiment 1](images/snmm_pnl_ex1.png)
+*Figure 8: Sophisticated Naïve Market Maker Realized & Unrealized PnL - Experiment 1*
+
+Our goal, however, is to ultimately make markets in environments where information is dissemenated much less frequently and with much higher resulting price changes. In experiment two, we sensitize the jump process to this effect with the following parameter updates:
+
+| Variable   | Value        | Definiton   |
+| :--------: | :----------: | :---------- |
+| $\sigma_J$       | 50         | Standard deviation of the jump process        |
+| $p_J$       | 0.0001         | Probability of jump in the true value at each auction        |
+
+Experimental results uncover a significant flaw in the sophisticated market maker's behavior: in environments with infrequent but violent jumps, spreads fail to track the true value of the underlying security (figure 10). This is a result of saturation of the SNMM's probability density function, where after so many trades at/around the same level, the probabilities that any price outside that level become so remote that it takes hundreds (sometimes thousands) of auctions for spreads to update in the event of large true value changes.
+
+Experiment two also exemplifies just how terribly the Naïve Market Maker can perform when instructed to maintain tight spreads but still incentivize inventory turnover. It is effective at managing inventory, but its inventory control forces it to oscillate about the true value in the opposite direction of its accumulated inventory. In other words, if it buys at or under the true value, the IC mechanism is going to force it to decrease its asking price until it successfully covers below the price it bought at.
+
+![Naïve Market Maker Performance - Experiment 2](images/nmm_perf_ex2.png)
+*Figure 9: Naïve Market Maker Performance - Experiment 2*
+
+![Naïve Market Maker PnL - Experiment 2](images/nmm_pnl_ex2.png)
+*Figure 10: Naïve Market Maker Realized & Unrealized PnL - Experiment 2*
+
+![Sophisticated Naïve Market Maker Performance - Experiment 2](images/snmm_perf_ex2.png)
+*Figure 11: Sophisticated Naïve Market Maker Performance - Experiment 2*
+
+![Sophisticated Naïve Market Maker PnL - Experiment 2](images/snmm_pnl_ex2.png)
+*Figure 12: Sophisticated Naïve Market Maker Realized & Unrealized PnL - Experiment 2*
+
+In ***omniscient_snmm.ipynb***, we find that notifying the market maker of jumps in the true value without specifying the amount dramatically increases its ability to track the true value of the underlying security. We develop a simple jump detection module (JDM) that observes public trading data and detects anomalies in the ratio of buy orders to sell orders in recent transaction history to trigger signals that the SNMM uses to re-center its probability density function. Figures 13 and 14 display the effect of the JDM's signals on the SNMM's true value tracking ability.
+
+![Sophisticated Naïve Market Maker Performance - No Jump Detection](images/snmm_perf_no_jdm.png)
+*Figure 11: Sophisticated Naïve Market Maker Performance - No Jump Detection*
+
+![Sophisticated Naïve Market Maker PnL - Experiment 2](images/snmm_perf_jdm.png)
+*Figure 12: Jump-Detecting Sophisticated Naïve Market Maker Performance*
+
+An interesting direction for future work would be a more sophisticated, data-driven jump detection module. For the sake of not convoluting the content of this paper, we've simplified the solution to jump detection and implementation can be seen in ***omniscient_snmm.ipynb*** and ***jdm.py***.
 
 # Real-World Experimental Expectations & Setup
 
@@ -191,4 +261,4 @@ First, we will compare the trading efficiency of the NMM versus the sophisticate
 
 # References
 
-[[1]]('https://dspace.mit.edu/bitstream/handle/1721.1/87351/53225588-MIT.pdf;sequence=2') Das, S. (Year). Intelligent Market-Making in Artificial Financial Markets.
+[[1]]('https://dspace.mit.edu/bitstream/handle/1721.1/87351/53225588-MIT.pdf;sequence=2') Das, S. (2003). Intelligent Market-Making in Artificial Financial Markets.

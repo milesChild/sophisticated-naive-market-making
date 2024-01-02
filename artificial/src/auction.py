@@ -1,6 +1,7 @@
 # imports
 import random
 from sophisticated.util import calculate_expected_value
+import numpy as np
 
 class Auction():
 
@@ -11,7 +12,7 @@ class Auction():
         self.N = N
         self.V_T0 = V_T0
 
-    def run(self) -> dict:
+    def run(self, omniscient: bool=False) -> dict:
 
         inventory_values = []
         bid_values = []
@@ -31,6 +32,14 @@ class Auction():
             # update the traders of the new true value
             for trader in self.traders:
                 trader.update_true_value(true_value)
+            
+            # check if the true value has changed
+            if omniscient:
+                if true_value != self.true_value_series[a-1] and a > 0:
+                    if self.market_maker.__class__.__name__ != "NaiveSpreadModule":
+                        last_ev = expected_values[-1]
+                        std_dev = np.std(expected_values)
+                        self.market_maker.reset_pdf(initial_true_value=last_ev, std_dev=std_dev)
             
             # randomize trading order
             random.shuffle(self.traders)

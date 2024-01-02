@@ -86,8 +86,14 @@ class SophisticatedSpreadModule():
         bid = self.__calculate_bid()
         ask = self.__calculate_ask()
         adjustment = self.calculate_inventory_adjustment(cur_inv)
+        if bid == ask:
+            bid -= 1
+            ask += 1
 
-        return bid + adjustment, ask + adjustment
+        # ensure the bid and asks with the adjustments are within 0 - 100
+        bid = max(0, min(bid + adjustment, 100))
+        ask = max(0, min(ask + adjustment, 100))
+        return bid, ask
 
     def __calculate_bid(self) -> int:
         min_diff = float('inf')
@@ -113,7 +119,7 @@ class SophisticatedSpreadModule():
                 # Stop cycling down if the difference starts increasing
                 break
         
-        return max(bid_price, 0)
+        return min(max(bid_price, 0), 100)
 
     def __calculate_ask(self) -> int:
         min_diff = float('inf')
@@ -139,7 +145,7 @@ class SophisticatedSpreadModule():
                 # Stop cycling up if the difference starts increasing
                 break
 
-        return min(ask_price, 100)
+        return max(0, min(ask_price, 100))
 
     def calculate_inventory_adjustment(self, cur_inv) -> int:
         return int(self.__i_max * (1 - np.exp(-self.__i_a * np.abs(cur_inv))) * -np.sign(cur_inv))

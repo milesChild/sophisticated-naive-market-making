@@ -12,7 +12,9 @@ class NaiveSpreadModule:
         bid = np.floor(last_px - self.__spread_width / 2)
         ask = np.ceil(last_px + self.__spread_width / 2)
         adjustment = self.__calc_inventory_adjustment(cur_inv)
-        return max(bid + adjustment, 0), min(ask + adjustment, 100)
+        bid = max(0, min(bid + adjustment, 100))
+        ask = max(0, min(ask + adjustment, 100))
+        return bid, ask
     
     def __calc_inventory_adjustment(self, cur_inv: int) -> int:
         return int(self.__i_max * (1 - np.exp(-self.__i_a * np.abs(cur_inv))) * -np.sign(cur_inv))
