@@ -3,10 +3,11 @@ import numpy as np
 
 class NaiveSpreadModule:
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, name="NaiveSpreadModule"):
         self.__spread_width = config["spread_width"]
         self.__i_max = config["i_max"]
         self.__i_a = config["i_a"]
+        self.name = name
     
     def get_spread(self, last_px: float, cur_inv: int) -> tuple:
         bid = np.floor(last_px - self.__spread_width / 2)

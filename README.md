@@ -247,6 +247,35 @@ In ***omniscient_snmm.ipynb***, we find that notifying the market maker of jumps
 
 An interesting direction for future work would be a more sophisticated, data-driven jump detection module. For the sake of not convoluting the content of this paper, we've simplified the solution to jump detection and implementation can be seen in ***omniscient_snmm.ipynb*** and ***jdm.py***.
 
+In ***competitive_auctions.ipynb***, we introduce naïve and sophisticated naïve market makers to competitive environments and find promising results particularly from SNMM-on-SNMM competition. SNMM profits and total volume decrease when a naïve market maker is introduced, however SNMM inventory turnover increases when a NMM is available to assist in price discovery *(table 1, 2)*. The SNMM still wins considerably more trades than the NMM as a result of its more competitive median spread value *(table 2)*. Interestingly, a two-SNMM competitive environment appears to be less harmful to PnL than the SNMM + NMM environment *(table 3, 4)*, however total achieved volume is essentially equivalent between the two SNMMs *(table 4)*.
+
+**Table 1: Single-SNMM Environment**
+
+| Market-Maker | Total Trades | Average PnL Per-Trade | Median Spread |
+| :--------: | :----------: | :----------: | :----------: |
+| SNMM       | 29810            |     0.16        |        1.0      | 
+
+**Table 2: SNMM + NMM Environment**
+
+| Market-Maker | Total Trades | Average PnL Per-Trade | Median Spread |
+| :--------: | :----------: | :----------: | :----------: |
+| SNMM       | 22109            |     0.10        |        1.0      | 
+| NMM       | 8438            |     0.15        |        2.0      | 
+
+**Table 3: Double-SNMM Environment**
+
+| Market-Maker | Total Trades | Average PnL Per-Trade | Median Spread |
+| :--------: | :----------: | :----------: | :----------: |
+| SNMM_1      | 15288            |     0.14        |        1.0      | 
+| SNMM_2      | 15459            |     0.14        |        1.0      | 
+
+**Table 4: Double-NMM Environment**
+
+| Market-Maker | Total Trades | Average PnL Per-Trade | Median Spread |
+| :--------: | :----------: | :----------: | :----------: |
+| NMM_1      | 30015            |     -1.13        |        2.0      |
+| NMM_2      | 760            |     -0.25        |        6.0      |
+
 # Real-World Experimental Expectations & Setup
 
 
