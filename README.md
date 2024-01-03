@@ -83,7 +83,7 @@ Where,
 
 - $i$ is the integer value of current inventory holdings (negative for short)
 
-- $a$ is a scaling factor for the exponential function
+- $a$ is a scaling factor for the exponential function (use higher $a$ when you are more averse to inventory accumulation)
 
 For example, when the max adjustment is set to 10 cents and $a$ is set to 0.5, the inventory control mechanism as a function of absolute inventory holdings would be as follows:
 
@@ -277,6 +277,52 @@ In ***competitive_auctions.ipynb***, we introduce naïve and sophisticated naïv
 | NMM_2      | 760            |     -0.25        |        6.0      |
 
 # Real-World Experimental Expectations & Setup
+
+Many of the parameters required for implementation of Das's model are very unrealistically attainable in a real trading environment and, as such, some estimation and slight modifications have been made prior to live deployment. The following modifications to the theoretical framework have not been exhaustively deliberated and there is likely much room for improvement among the below.
+
+**Position Sizes:** 
+
+First, the lack of position sizes in Das's model is quite problematic when considering the wide distribution of trading position sizes that come with real trading environments. First, updates to the probability density function should logically be made in proportion to the relative size of the buy or sell trade, where larger trades have more impact on the probability update. Second, the inventory control mechanism must account for greater-than-one lot trading sizes when the market maker is configured to post bids/offers with greater than one quantity.
+
+We resolve the probability density function update issue by likening the single-qty trades in the experimental framework to 100-lot trades in practice and multiple each PDF update by $\frac{Q}{100}$, where $Q$ is the quantity of the trade, so that larger trades are given more weight in PDF updates and smaller trades less weight.
+
+The inventory control mechanism issue is easily resovled by adding a *trade_qty* parameter to the SNMM's spread module and dividing the *cur_inv* by the SNMM's configured *trade_qty* when calculating inventory adjustments.
+
+It is also worth noting that it is probable that an edge can be gained in estimating whether an arbitrary trade is informed or random given its relative position size. If possible, it could relieve the need to make assumptions about the proportion of informed traders as new bayesian updates could be easily derived given the knowledge that a trade is informed / random (or the probability of the single trade being informed could be used in the updates rather than blanked assumptions about random / informed trading frequency and noise). This is an interesting direction for future work.
+
+**Initial True Value ($V_{T0}$) and True Value Standard Deviation ($\sigma_0$):**
+
+The theoretical model requires that we provide the market maker with the true value and standard deviation of the true value distribution at the first auction. Obviously, there is no such thing as a "true value" in practice and the best we can do is arrive at a sensible esimate based on the data available to us. When historical trading data is available, we subject the market maker to a warm-up period on recent trading history in which we can calculate the mean historical trading value and standard deviation of trading values, which we use as $V_{T0}$ and $\sigma_0$. Although we do not subject the market maker to any markets with no recent trading data, estimation of the true value could be achieved via many possible methods. One possibility is to put the $V_{T0}$ at the midpoint of possible prices (50) and $\sigma_0$ relatively high (25) which would allow the SNMM to maintain wide spreads until more data is available. Another possibility would be to build a simple trading agent that enters the market and binary searches for the true value, deciding it has arrived at a sensible estimate when the rate of trades taken against it reaches a low point.
+
+**Proportion of Informed Traders ($\alpha$), Probability and Standard Deviation of a Noise Trade ($\eta, \sigma$), and Standard Deviation of Informed Noise Distribution (\sigma_W):**
+
+The remaining theoretical framework variables are the least realistic to obtain and most difficult to estimate in practice.
+
+SELECT 1 
+
+However, a historical optimization on past trading data from baskets of similar markets reveals that SNMM performance tends to be best when **______**.
+
+As such, in **_____** we develop a historical optimization on $\alpha$, $\eta$, and $\sigma_W$ where we categorize and basket markets based on a subjective estimate of their true value jump process characteristics and test SNMM performance against many permutations of these variables. We will spare readers from an extensive explanation of our methodology here, but those who are interested can see the full process in the aforementioned notebook.
+
+Our historical optimization suggests that, in environments where the true value evolves frequently and with small jumps, the following parameters should be used:
+
+| Variable   | Value        | Definiton   |
+| :--------: | :----------: | :---------- |
+| $\alpha$       |          | Proportion of total traders that are Gaussian-informed        |
+| $\sigma_W$       |          | Standard deviation of gaussian-informed noise distribution        |
+| $\eta$       |          | Probability of a noise trader placing a trade during any auction        |
+| $\sigma_J$       |          | Standard deviation of the jump process        |
+
+And in environments with large and infrequent jumps, these parameters should be used:
+
+| Variable   | Value        | Definiton   |
+| :--------: | :----------: | :---------- |
+| $\alpha$       |          | Proportion of total traders that are Gaussian-informed        |
+| $\sigma_W$       |          | Standard deviation of gaussian-informed noise distribution        |
+| $\eta$       |          | Probability of a noise trader placing a trade during any auction        |
+| $\sigma_J$       |          | Standard deviation of the jump process        |
+
+**Market Selection Evaluation Methodology**
 
 
 
